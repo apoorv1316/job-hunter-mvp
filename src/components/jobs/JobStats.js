@@ -18,10 +18,7 @@ export default function JobStats({ currentPage, limit, totalJobs, loading = fals
         Job Results
       </h2>
       <p className="text-sm text-gray-600 font-medium">
-        {totalJobs > 0 
-          ? `${startItem}-${endItem} of ${totalJobs} jobs`
-          : 'No jobs found'
-        }
+        {totalJobs > 0 && `${startItem}-${endItem} of ${totalJobs} jobs`}
       </p>
     </div>
   );
