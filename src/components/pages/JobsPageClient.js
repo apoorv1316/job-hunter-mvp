@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import SearchBar from '../search/SearchBar';
 import FilterPanel from '../search/FilterPanel';
+import FilterChips from '../ui/FilterChips';
 import JobGrid from '../jobs/JobGrid';
 import JobStats from '../jobs/JobStats';
 
@@ -10,8 +11,8 @@ export default function JobsPageClient({ initialJobs }) {
   const [search, setSearch] = useState('');
   const [company, setCompany] = useState('');
   const [location, setLocation] = useState('');
-  const [country, setCountry] = useState('');
-  const [category, setCategory] = useState('');
+  const [country, setCountry] = useState([]);
+  const [category, setCategory] = useState([]);
   const [sortBy, setSortBy] = useState('createdAt');
   const [limit, setLimit] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -38,15 +39,15 @@ export default function JobsPageClient({ initialJobs }) {
         job.location.toLowerCase().includes(locationLower)
       );
     }
-    if (country.trim()) {
-      const countryLower = country.toLowerCase();
-      filtered = filtered.filter(job =>
-        job.location.toLowerCase().includes(countryLower)
-      );
+    if (country.length > 0) {
+      filtered = filtered.filter(job => {
+        const locationLower = job.location.toLowerCase();
+        return country.some(c => locationLower.includes(c.toLowerCase()));
+      });
     }
-    if (category.trim()) {
+    if (category.length > 0) {
       filtered = filtered.filter(job =>
-        job.category === category
+        category.includes(job.category)
       );
     }
     filtered.sort((a, b) => {
@@ -72,6 +73,19 @@ export default function JobsPageClient({ initialJobs }) {
   useEffect(() => {
     setCurrentPage(1);
   }, [search, country, category, sortBy, limit]);
+
+  const handleRemoveCountry = (countryToRemove) => {
+    setCountry(country.filter(c => c !== countryToRemove));
+  };
+
+  const handleRemoveCategory = (categoryToRemove) => {
+    setCategory(category.filter(c => c !== categoryToRemove));
+  };
+
+  const handleClearAllFilters = () => {
+    setCountry([]);
+    setCategory([]);
+  };
 
   const totalJobs = filteredJobs.length;
   const totalPages = Math.ceil(totalJobs / limit);
@@ -112,6 +126,14 @@ export default function JobsPageClient({ initialJobs }) {
           </div>
         </div>
       </div>
+
+      <FilterChips 
+        countries={country}
+        categories={category}
+        onRemoveCountry={handleRemoveCountry}
+        onRemoveCategory={handleRemoveCategory}
+        onClearAll={handleClearAllFilters}
+      />
 
       <div className="space-y-4">
         <JobStats 

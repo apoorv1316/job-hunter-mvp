@@ -65,12 +65,14 @@ export default function FilterPanel({
         value={country}
         onChange={onCountryChange}
         options={countryOptions}
+        multiSelect={true}
       />
       <SearchableDropdown
         placeholder={loading ? "Loading..." : "Category"}
         value={category}
         onChange={onCategoryChange}
         options={categoryOptions}
+        multiSelect={true}
       />
 
       <SearchableDropdown

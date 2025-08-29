@@ -7,7 +7,8 @@ export default function SearchableDropdown({
   value,
   onChange,
   options = [],
-  className = ''
+  className = '',
+  multiSelect = false
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,9 +35,19 @@ export default function SearchableDropdown({
   }, []);
 
   const handleOptionClick = (option) => {
-    onChange(option.value);
-    setIsOpen(false);
-    setSearchTerm('');
+    if (multiSelect) {
+      const currentValues = Array.isArray(value) ? value : [];
+      const isSelected = currentValues.includes(option.value);
+      const newValues = isSelected
+        ? currentValues.filter(v => v !== option.value)
+        : [...currentValues, option.value];
+      onChange(newValues);
+      setSearchTerm('');
+    } else {
+      onChange(option.value);
+      setIsOpen(false);
+      setSearchTerm('');
+    }
   };
 
   const handleInputFocus = () => {
@@ -48,7 +59,9 @@ export default function SearchableDropdown({
     if (!isOpen) setIsOpen(true);
   };
 
-  const displayValue = value ? options.find(opt => opt.value === value)?.label || value : '';
+  const displayValue = multiSelect 
+    ? (Array.isArray(value) && value.length > 0 ? `${value.length} selected` : '')
+    : (value ? options.find(opt => opt.value === value)?.label || value : '');
 
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
@@ -71,10 +84,10 @@ export default function SearchableDropdown({
 
       {isOpen && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-          {value && (
+          {((multiSelect && Array.isArray(value) && value.length > 0) || (!multiSelect && value)) && (
             <div
               className="px-3 py-2 text-sm text-gray-500 cursor-pointer hover:bg-gray-50 border-b border-gray-100"
-              onClick={() => handleOptionClick({ value: '', label: '' })}
+              onClick={() => onChange(multiSelect ? [] : '')}
             >
               Clear selection
             </div>
@@ -84,12 +97,20 @@ export default function SearchableDropdown({
             filteredOptions.map((option) => (
               <div
                 key={option.value}
-                className={`px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-colors ${
-                  value === option.value ? 'bg-blue-100 text-blue-800 font-medium' : 'text-gray-900'
+                className={`px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-colors flex items-center justify-between ${
+                  (multiSelect 
+                    ? (Array.isArray(value) && value.includes(option.value))
+                    : value === option.value
+                  ) ? 'bg-blue-100 text-blue-800 font-medium' : 'text-gray-900'
                 }`}
                 onClick={() => handleOptionClick(option)}
               >
-                {option.label}
+                <span>{option.label}</span>
+                {multiSelect && Array.isArray(value) && value.includes(option.value) && (
+                  <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                )}
               </div>
             ))
           ) : (
