@@ -1,6 +1,7 @@
 import { parseString } from 'xml2js';
 import { db } from '../lib/db/index.js';
 import { jobs } from '../lib/db/schema.js';
+import { detectJobCategory } from '../lib/utils/jobCategories.js';
 
 async function crawlWeWorkRemotelyRSS() {
   const rssUrl = 'https://weworkremotely.com/remote-jobs.rss';
@@ -13,11 +14,9 @@ async function crawlWeWorkRemotelyRSS() {
     
     if (jobsData.length > 0) {
       await saveJobsToDatabase(jobsData);
-      console.log(`✅ Saved ${jobsData.length} jobs from WeWorkRemotely RSS`);
     }
     
   } catch (error) {
-    console.error('RSS crawler failed:', error.message);
     throw error;
   }
 }
@@ -86,12 +85,14 @@ function parseRSSXML(xmlData) {
             break;
           }
         }
+        const detectedCategory = detectJobCategory(jobTitle);
         
         return {
           title: jobTitle.toLowerCase().trim(),
           company: company.toLowerCase().trim(),
           location: location.toLowerCase().trim(),
           salary: salary.toLowerCase().trim(),
+          category: detectedCategory,
           description: cleanDescription.toLowerCase().substring(0, 500),
           externalUrl: link
         };
