@@ -8,7 +8,8 @@ export default function SearchableDropdown({
   onChange,
   options = [],
   className = '',
-  multiSelect = false
+  multiSelect = false,
+  searchable = true
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -17,11 +18,15 @@ export default function SearchableDropdown({
   const inputRef = useRef(null);
 
   useEffect(() => {
-    const filtered = options.filter(option =>
-      option.label.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredOptions(filtered);
-  }, [searchTerm, options]);
+    if (searchable) {
+      const filtered = options.filter(option =>
+        option.label.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredOptions(filtered);
+    } else {
+      setFilteredOptions(options);
+    }
+  }, [searchTerm, options, searchable]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -55,8 +60,10 @@ export default function SearchableDropdown({
   };
 
   const handleInputChange = (e) => {
-    setSearchTerm(e.target.value);
-    if (!isOpen) setIsOpen(true);
+    if (searchable) {
+      setSearchTerm(e.target.value);
+      if (!isOpen) setIsOpen(true);
+    }
   };
 
   const displayValue = multiSelect 
@@ -70,10 +77,11 @@ export default function SearchableDropdown({
         type="text"
         className="w-full px-3 py-2.5 text-sm text-gray-900 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm placeholder:text-gray-600"
         placeholder={placeholder}
-        value={isOpen ? searchTerm : displayValue}
+        value={isOpen && searchable ? searchTerm : displayValue}
         onChange={handleInputChange}
         onFocus={handleInputFocus}
         autoComplete="off"
+        readOnly={!searchable}
       />
       
       <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -84,7 +92,7 @@ export default function SearchableDropdown({
 
       {isOpen && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-          {((multiSelect && Array.isArray(value) && value.length > 0) || (!multiSelect && value)) && (
+          {((multiSelect && Array.isArray(value) && value.length > 0) || (!multiSelect && value && searchable)) && (
             <div
               className="px-3 py-2 text-sm text-gray-500 cursor-pointer hover:bg-gray-50 border-b border-gray-100"
               onClick={() => onChange(multiSelect ? [] : '')}

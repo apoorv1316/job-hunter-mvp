@@ -80,6 +80,7 @@ export default function FilterPanel({
         value={sortBy}
         onChange={onSortByChange}
         options={sortOptions}
+        searchable={false}
       />
 
       <SearchableDropdown
@@ -87,6 +88,7 @@ export default function FilterPanel({
         value={limit.toString()}
         onChange={(value) => onLimitChange(Number(value))}
         options={limitOptions}
+        searchable={false}
       />
     </div>
   );
