@@ -3,12 +3,88 @@ import { db } from '../lib/db/index.js';
 import { jobs } from '../lib/db/schema.js';
 import { detectJobCategory } from '../lib/utils/jobCategories.js';
 
+const CRAWLER_CONFIG = {
+  maxRetries : 3,
+  baseDelayMs: 1000, 
+  requestTimeoutMs: 30000,
+  politenessDelayMs: 2000,
+};
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function calculateBackoffDelay(attempt, baseDelay = CRAWLER_CONFIG.baseDelayMs) {
+  return baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
+}
+
+function isTransientError(error) {
+  if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
+    return true;
+  }
+  if (error.status >= 500 && error.status < 600) {
+    return true;
+  }
+  if (error.status === 429) {
+    return true;
+  }
+  return false;
+}
+
+async function fetchWithRetry(url, options = {}) {
+  let lastError;
+  
+  for (let attempt = 0; attempt < CRAWLER_CONFIG.maxRetries; attempt++) {
+    try {      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), CRAWLER_CONFIG.requestTimeoutMs);
+      
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'JobHunter-Bot/1.0 (Polite Crawler)',
+          'Accept': 'application/rss+xml, application/xml, text/xml',
+          ...options.headers,
+        },
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
+        error.status = response.status;
+        throw error;
+      }
+            return response;
+      
+    } catch (error) {
+      lastError = error;
+      console.log(`Attempt ${attempt + 1} failed:`, error.message);
+      
+      if (!isTransientError(error)) {
+        console.log(` Non-transient error, not retrying`);
+        break;
+      }
+      
+      if (attempt < CRAWLER_CONFIG.maxRetries - 1) {
+        const delay = calculateBackoffDelay(attempt);
+        console.log(` Waiting ${Math.round(delay)}ms before retry...`);
+        await sleep(delay);
+      }
+    }
+  }
+  
+  throw lastError;
+}
+
 async function crawlWeWorkRemotelyRSS() {
   const rssUrl = 'https://weworkremotely.com/remote-jobs.rss';
   
-  try {
-    const response = await fetch(rssUrl);
-    const xmlData = await response.text();
+  try {    
+    await sleep(CRAWLER_CONFIG.politenessDelayMs);  
+    const response = await fetchWithRetry(rssUrl);
+    const xmlData = await response.text(); 
     
     const jobsData = await parseRSSXML(xmlData);
     
