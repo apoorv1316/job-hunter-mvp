@@ -20,7 +20,7 @@ A web application that crawls remote job listings and provides a searchable inte
 - **Responsive design** optimized for all devices
 
 ### Technical Stack
-- **Frontend**: Next.js with React
+- **Frontend**: Next.js
 - **Backend**: Next.js API routes
 - **Database**: SQLite with Drizzle ORM
 - **Crawler**: Node.js with polite crawling practices
@@ -79,7 +79,6 @@ node scripts/weworkremotely-rss-crawler.js
 ```bash
 npm run dev
 ```
-The application will be available at `http://localhost:3000`
 
 ## 📱 Using the Web Interface
 
